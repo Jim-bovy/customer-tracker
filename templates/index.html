@@ -6,12 +6,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-      /* กำหนดความสูงให้กับ container ของ canvas เพื่อตั้งค่า aspect ratio */
       #chart-container {
         max-width: 30%;
         margin: auto;
         position: relative;
-        height: 300px; /* ปรับความสูงตามที่คุณต้องการ */
+        height: 300px;
       }
     </style>
 </head>
@@ -19,19 +18,34 @@
 
     <h1 class="mb-4">ระบบติดตามลูกค้า</h1>
 
-    <!-- ✅ แจ้งเตือนลูกค้าที่ถึงวันติดตาม -->
-    {% if due_today %}
+    {% if due_today and due_today|length > 0 %}
         <div class="alert alert-danger">
-            📌 <strong>แจ้งเตือน:</strong> ลูกค้าต่อไปนี้ถึงวันติดตามแล้ว!
-            <ul>
+            📢 <strong>วันนี้เป็นวันติดตามลูกค้าจำนวน {{ due_today|length }} คน!</strong><br>
+            <span>กรุณาติดต่อ:</span>
+            <ul class="mt-2 mb-0">
                 {% for row in due_today %}
                     <li>{{ row[1] }} - {{ row[2] }} (ติดตามวันที่ {{ row[6] }})</li>
                 {% endfor %}
             </ul>
         </div>
+
+        <!-- ✅ เสียงแจ้งเตือน -->
+        <audio id="alertSound" autoplay>
+            <source src="{{ url_for('static', filename='alert.mp3') }}" type="audio/mpeg">
+            เบราว์เซอร์ไม่รองรับเสียง
+        </audio>
+        <script>
+            window.addEventListener('DOMContentLoaded', function () {
+                const sound = document.getElementById('alertSound');
+                if (sound) {
+                    sound.play().catch(function (err) {
+                        console.warn("เบราว์เซอร์บล็อกเสียงอัตโนมัติ:", err);
+                    });
+                }
+            });
+        </script>
     {% endif %}
 
-    <!-- ✅ กราฟแสดงจำนวนลูกค้าตามสถานะ -->
     <div class="mb-5">
         <h5>สรุปสถานะลูกค้า</h5>
         <div id="chart-container">
@@ -39,20 +53,11 @@
         </div>
     </div>
 
-    <!-- ✅ ฟอร์มเพิ่มลูกค้าใหม่ -->
     <form method="post" action="/add" class="row g-2 mb-4">
-        <div class="col-md-2">
-            <input type="text" name="name" placeholder="ชื่อลูกค้า" class="form-control" required>
-        </div>
-        <div class="col-md-2">
-            <input type="tel" name="phone" placeholder="เบอร์โทร" pattern="[0-9]{9,10}" title="ใส่เฉพาะตัวเลข 9-10 หลัก" class="form-control" required>
-        </div>
-        <div class="col-md-2">
-            <input type="text" name="location" placeholder="สถานที่" class="form-control">
-        </div>
-        <div class="col-md-1">
-            <input type="number" name="price" placeholder="ราคา" class="form-control" min="0">
-        </div>
+        <div class="col-md-2"><input type="text" name="name" placeholder="ชื่อลูกค้า" class="form-control" required></div>
+        <div class="col-md-2"><input type="tel" name="phone" placeholder="เบอร์โทร" pattern="[0-9]{9,10}" class="form-control" required></div>
+        <div class="col-md-2"><input type="text" name="location" placeholder="สถานที่" class="form-control"></div>
+        <div class="col-md-1"><input type="number" name="price" placeholder="ราคา" class="form-control" min="0"></div>
         <div class="col-md-2">
             <select name="status" class="form-select">
                 <option value="รอดำเนินการ">รอดำเนินการ</option>
@@ -60,42 +65,21 @@
                 <option value="ปฏิเสธ">ปฏิเสธ</option>
             </select>
         </div>
-        <div class="col-md-2">
-            <input type="date" name="follow_up_date" class="form-control" required>
-        </div>
-        <div class="col-md-3 mt-2">
-            <input type="text" name="note" placeholder="หมายเหตุ" class="form-control">
-        </div>
-        <div class="col-md-2 mt-2">
-            <button type="submit" class="btn btn-primary w-100">เพิ่มลูกค้า</button>
-        </div>
+        <div class="col-md-2"><input type="date" name="follow_up_date" class="form-control" required></div>
+        <div class="col-md-3 mt-2"><input type="text" name="note" placeholder="หมายเหตุ" class="form-control"></div>
+        <div class="col-md-2 mt-2"><button type="submit" class="btn btn-primary w-100">เพิ่มลูกค้า</button></div>
     </form>
 
-    <!-- ✅ ตารางแสดงลูกค้าทั้งหมด -->
     <table class="table table-bordered table-striped align-middle">
         <thead>
             <tr>
-                <th>ชื่อ</th>
-                <th>เบอร์</th>
-                <th>สถานที่</th>
-                <th>ราคา</th>
-                <th>สถานะ</th>
-                <th>ติดตาม</th>
-                <th>หมายเหตุ</th>
-                <th>อัปเดตสถานะ</th>
-                <th>ลบ</th>
+                <th>ชื่อ</th><th>เบอร์</th><th>สถานที่</th><th>ราคา</th><th>สถานะ</th><th>ติดตาม</th><th>หมายเหตุ</th><th>อัปเดตสถานะ</th><th>ลบ</th>
             </tr>
         </thead>
         <tbody>
             {% for row in customers %}
             <tr>
-                <td>{{ row[1] }}</td>
-                <td>{{ row[2] }}</td>
-                <td>{{ row[3] }}</td>
-                <td>{{ row[4] }}</td>
-                <td>{{ row[5] }}</td>
-                <td>{{ row[6] }}</td>
-                <td>{{ row[7] }}</td>
+                <td>{{ row[1] }}</td><td>{{ row[2] }}</td><td>{{ row[3] }}</td><td>{{ row[4] }}</td><td>{{ row[5] }}</td><td>{{ row[6] }}</td><td>{{ row[7] }}</td>
                 <td>
                     <form action="/update_status/{{ row[0] }}" method="post" class="d-flex">
                         <select name="decision_status" class="form-select me-2">
@@ -106,15 +90,12 @@
                         <button type="submit" class="btn btn-sm btn-success">อัปเดต</button>
                     </form>
                 </td>
-                <td>
-                    <a href="/delete/{{ row[0] }}" class="btn btn-sm btn-danger" onclick="return confirm('ลบลูกค้าคนนี้?')">ลบ</a>
-                </td>
+                <td><a href="/delete/{{ row[0] }}" class="btn btn-sm btn-danger" onclick="return confirm('ลบลูกค้าคนนี้?')">ลบ</a></td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <!-- ✅ Chart.js Script -->
     <script>
       const ctx = document.getElementById('statusChart').getContext('2d');
       const statusChart = new Chart(ctx, {
@@ -124,16 +105,8 @@
           datasets: [{
             label: 'จำนวนลูกค้า',
             data: [{{ ordered }}, {{ not_ordered }}, {{ pending }}],
-            backgroundColor: [
-              '#800000',  // สีเลือดหมูสำหรับ 'รับงาน'
-              '#808080',  // สีเทาสำหรับ 'ปฏิเสธ'
-              '#FFD700'   // สีทองสำหรับ 'รอดำเนินการ'
-            ],
-            borderColor: [
-              '#5a0000',  // สีกรอบเลือดหมู
-              '#666666',  // สีกรอบเทา
-              '#b8860b'   // สีกรอบทองเข้ม
-            ],
+            backgroundColor: ['#800000', '#808080', '#FFD700'],
+            borderColor: ['#5a0000', '#666666', '#b8860b'],
             borderWidth: 1
           }]
         },
@@ -141,12 +114,7 @@
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            }
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
           },
           plugins: {
             legend: { display: false },

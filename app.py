@@ -4,11 +4,10 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# ✅ สร้างตาราง customers ถ้ายังไม่มี
 def init_db():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-    cursor.execute('''
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS customers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
@@ -19,26 +18,22 @@ def init_db():
             follow_up_date TEXT,
             note TEXT
         )
-    ''')
+    """)
     conn.commit()
     conn.close()
 
-# ✅ หน้าแรก: แสดงทั้งหมด + แจ้งเตือน + จำนวนลูกค้าตามสถานะ
 @app.route('/')
 def index():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
 
-    # ลูกค้าทั้งหมด
     cursor.execute("SELECT * FROM customers")
     customers = cursor.fetchall()
 
-    # ลูกค้าที่ถึงวันติดตามวันนี้
     today = datetime.today().strftime('%Y-%m-%d')
     cursor.execute("SELECT * FROM customers WHERE follow_up_date = ?", (today,))
     due_today = cursor.fetchall()
 
-    # จำนวนลูกค้าแต่ละสถานะ
     cursor.execute("SELECT COUNT(*) FROM customers WHERE decision_status='รับงาน'")
     ordered = cursor.fetchone()[0]
 
@@ -59,7 +54,6 @@ def index():
         pending=pending
     )
 
-# ✅ เพิ่มลูกค้าใหม่
 @app.route('/add', methods=['POST'])
 def add_customer():
     name = request.form['name']
@@ -81,7 +75,6 @@ def add_customer():
 
     return redirect(url_for('index'))
 
-# ✅ ลบลูกค้า
 @app.route('/delete/<int:id>')
 def delete_customer(id):
     conn = sqlite3.connect('database.db')
@@ -91,7 +84,6 @@ def delete_customer(id):
     conn.close()
     return redirect(url_for('index'))
 
-# ✅ อัปเดตสถานะลูกค้า
 @app.route('/update_status/<int:id>', methods=['POST'])
 def update_status(id):
     new_status = request.form['decision_status']
@@ -102,7 +94,6 @@ def update_status(id):
     conn.close()
     return redirect(url_for('index'))
 
-# ✅ รันแอป
 if __name__ == '__main__':
     init_db()
     app.run(debug=True, port=5005)
