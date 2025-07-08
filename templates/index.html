@@ -1,218 +1,165 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <title>ระบบติดตามลูกค้า</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- ✅ โหลด Chart.js และ Plugin -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-
     <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            padding: 20px;
-            background: #f4f9ff;
-            color: #333;
-        }
-
-        h1 {
-            text-align: center;
-            color: #005b96;
-            margin-bottom: 30px;
-        }
-
-        canvas {
-            max-width: 450px;
-            margin: 20px auto;
-            display: block;
-        }
-
-        form {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        input, textarea, button {
-            padding: 8px;
-            margin: 6px 4px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-        }
-
-        input[type="text"], input[type="number"], textarea, input[type="date"] {
-            width: 220px;
-        }
-
-        button {
-            background-color: #007acc;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #005b96;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 90%;
-            margin-top: 25px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        th, td {
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #d9e2ec;
-        }
-
-        th {
-            background-color: #007acc;
-            color: white;
-        }
-
-        tr:nth-child(even) {
-            background-color: #eef6fc;
-        }
-
-        tr:hover {
-            background-color: #d7ebf9;
-        }
-
-        .inline-form {
-            display: inline;
-        }
-
-        .small-btn {
-            font-size: 12px;
-            padding: 4px 6px;
-            border-radius: 3px;
-        }
-
-        .red-label {
-            color: darkred;
-            font-weight: bold;
-        }
-
-        .red-input {
-            border: 1px solid red;
-            background-color: #ffe6e6;
-            color: darkred;
-        }
+      /* กำหนดความสูงให้กับ container ของ canvas เพื่อตั้งค่า aspect ratio */
+      #chart-container {
+        max-width: 30%;
+        margin: auto;
+        position: relative;
+        height: 300px; /* ปรับความสูงตามที่คุณต้องการ */
+      }
     </style>
 </head>
-<body>
+<body class="container mt-4">
 
-    <h1>ระบบติดตามลูกค้า</h1>
+    <h1 class="mb-4">ระบบติดตามลูกค้า</h1>
 
-    <!-- ✅ กราฟ -->
-    <canvas id="statusChart"></canvas>
+    <!-- ✅ แจ้งเตือนลูกค้าที่ถึงวันติดตาม -->
+    {% if due_today %}
+        <div class="alert alert-danger">
+            📌 <strong>แจ้งเตือน:</strong> ลูกค้าต่อไปนี้ถึงวันติดตามแล้ว!
+            <ul>
+                {% for row in due_today %}
+                    <li>{{ row[1] }} - {{ row[2] }} (ติดตามวันที่ {{ row[6] }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
 
-    <!-- ✅ ค้นหา -->
-    <form method="GET" action="/">
-        <input type="text" name="search" placeholder="🔍 ค้นหาชื่อลูกค้า" value="{{ request.args.get('search', '') }}">
-        <button type="submit">ค้นหา</button>
+    <!-- ✅ กราฟแสดงจำนวนลูกค้าตามสถานะ -->
+    <div class="mb-5">
+        <h5>สรุปสถานะลูกค้า</h5>
+        <div id="chart-container">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+
+    <!-- ✅ ฟอร์มเพิ่มลูกค้าใหม่ -->
+    <form method="post" action="/add" class="row g-2 mb-4">
+        <div class="col-md-2">
+            <input type="text" name="name" placeholder="ชื่อลูกค้า" class="form-control" required>
+        </div>
+        <div class="col-md-2">
+            <input type="tel" name="phone" placeholder="เบอร์โทร" pattern="[0-9]{9,10}" title="ใส่เฉพาะตัวเลข 9-10 หลัก" class="form-control" required>
+        </div>
+        <div class="col-md-2">
+            <input type="text" name="location" placeholder="สถานที่" class="form-control">
+        </div>
+        <div class="col-md-1">
+            <input type="number" name="price" placeholder="ราคา" class="form-control" min="0">
+        </div>
+        <div class="col-md-2">
+            <select name="status" class="form-select">
+                <option value="รอดำเนินการ">รอดำเนินการ</option>
+                <option value="รับงาน">รับงาน</option>
+                <option value="ปฏิเสธ">ปฏิเสธ</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="date" name="follow_up_date" class="form-control" required>
+        </div>
+        <div class="col-md-3 mt-2">
+            <input type="text" name="note" placeholder="หมายเหตุ" class="form-control">
+        </div>
+        <div class="col-md-2 mt-2">
+            <button type="submit" class="btn btn-primary w-100">เพิ่มลูกค้า</button>
+        </div>
     </form>
 
-    <!-- ✅ ฟอร์มเพิ่มลูกค้า -->
-    <form method="POST" action="/add">
-        <input type="text" name="name" placeholder="ชื่อลูกค้า" required>
-        <input type="text" name="phone" placeholder="เบอร์โทร" required>
-        <input type="text" name="location" placeholder="สถานที่"><br>
-        <textarea name="note" placeholder="หมายเหตุ" rows="2"></textarea><br>
-        <input type="text" name="proposal_details" placeholder="ข้อเสนอ / งานที่เสนอ">
-        <input type="number" step="0.01" name="proposal_price" placeholder="ราคาที่เสนอ (บาท)"><br>
-        <label for="follow_up_date" class="red-label">📅 วันนัดติดตาม</label><br>
-        <input type="date" id="follow_up_date" name="follow_up_date" class="red-input"><br>
-        <button type="submit">➕ เพิ่มลูกค้า</button>
-    </form>
-
-    <!-- ✅ ตาราง -->
-    <table>
-        <tr>
-            <th>ชื่อ</th>
-            <th>เบอร์</th>
-            <th>สถานที่</th>
-            <th>ข้อเสนอ</th>
-            <th>ราคา</th>
-            <th>หมายเหตุ</th>
-            <th>สถานะ</th>
-            <th>วันนัดติดตาม</th>
-            <th>จัดการ</th>
-        </tr>
-        {% for c in customers %}
-        <tr>
-            <td>{{ c['name'] }}</td>
-            <td>{{ c['phone'] }}</td>
-            <td>{{ c['location'] }}</td>
-            <td>{{ c['details'] or '-' }}</td>
-            <td>{{ '{:,.2f}'.format(c['price']) if c['price'] else '-' }}</td>
-            <td>{{ c['note'] or '-' }}</td>
-            <td>
-                {{ c['status'] or 'ยังไม่เสนอ' }}
-                {% if c['status'] == 'รอตัดสินใจ' %}
-                    <form method="POST" action="/update_status/{{ c['id'] }}" class="inline-form">
-                        <input type="hidden" name="new_status" value="ตกลง">
-                        <button type="submit" class="small-btn">✅</button>
+    <!-- ✅ ตารางแสดงลูกค้าทั้งหมด -->
+    <table class="table table-bordered table-striped align-middle">
+        <thead>
+            <tr>
+                <th>ชื่อ</th>
+                <th>เบอร์</th>
+                <th>สถานที่</th>
+                <th>ราคา</th>
+                <th>สถานะ</th>
+                <th>ติดตาม</th>
+                <th>หมายเหตุ</th>
+                <th>อัปเดตสถานะ</th>
+                <th>ลบ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in customers %}
+            <tr>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td>{{ row[3] }}</td>
+                <td>{{ row[4] }}</td>
+                <td>{{ row[5] }}</td>
+                <td>{{ row[6] }}</td>
+                <td>{{ row[7] }}</td>
+                <td>
+                    <form action="/update_status/{{ row[0] }}" method="post" class="d-flex">
+                        <select name="decision_status" class="form-select me-2">
+                            <option value="รอดำเนินการ" {% if row[5] == 'รอดำเนินการ' %}selected{% endif %}>รอดำเนินการ</option>
+                            <option value="รับงาน" {% if row[5] == 'รับงาน' %}selected{% endif %}>รับงาน</option>
+                            <option value="ปฏิเสธ" {% if row[5] == 'ปฏิเสธ' %}selected{% endif %}>ปฏิเสธ</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-success">อัปเดต</button>
                     </form>
-                    <form method="POST" action="/update_status/{{ c['id'] }}" class="inline-form">
-                        <input type="hidden" name="new_status" value="ไม่ตกลง">
-                        <button type="submit" class="small-btn">❌</button>
-                    </form>
-                {% endif %}
-            </td>
-            <td>{{ c['follow_up_date'] or '-' }}</td>
-            <td>
-                <form method="POST" action="/delete_customer/{{ c['id'] }}" onsubmit="return confirm('ลบลูกค้าชื่อ {{ c['name'] }}?');" class="inline-form">
-                    <button type="submit" class="small-btn" style="background:red; color:white;">🗑️</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
+                </td>
+                <td>
+                    <a href="/delete/{{ row[0] }}" class="btn btn-sm btn-danger" onclick="return confirm('ลบลูกค้าคนนี้?')">ลบ</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 
-    <!-- ✅ สคริปต์แสดงกราฟ -->
+    <!-- ✅ Chart.js Script -->
     <script>
-    const customers = {{ customers_json | safe }};
-    let agreed = 0, declined = 0, pending = 0;
-    customers.forEach(c => {
-        if (c.status === 'ตกลง') agreed++;
-        else if (c.status === 'ไม่ตกลง') declined++;
-        else if (c.status === 'รอตัดสินใจ') pending++;
-    });
-
-    const ctx = document.getElementById('statusChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'pie',
+      const ctx = document.getElementById('statusChart').getContext('2d');
+      const statusChart = new Chart(ctx, {
+        type: 'bar',
         data: {
-            labels: ['ตกลง', 'ไม่ตกลง', 'รอตัดสินใจ'],
-            datasets: [{
-                data: [agreed, declined, pending],
-                backgroundColor: ['#28a745', '#dc3545', '#ffc107']
-            }]
+          labels: ['รับงาน', 'ปฏิเสธ', 'รอดำเนินการ'],
+          datasets: [{
+            label: 'จำนวนลูกค้า',
+            data: [{{ ordered }}, {{ not_ordered }}, {{ pending }}],
+            backgroundColor: [
+              '#800000',  // สีเลือดหมูสำหรับ 'รับงาน'
+              '#808080',  // สีเทาสำหรับ 'ปฏิเสธ'
+              '#FFD700'   // สีทองสำหรับ 'รอดำเนินการ'
+            ],
+            borderColor: [
+              '#5a0000',  // สีกรอบเลือดหมู
+              '#666666',  // สีกรอบเทา
+              '#b8860b'   // สีกรอบทองเข้ม
+            ],
+            borderWidth: 1
+          }]
         },
         options: {
-            plugins: {
-                legend: { position: 'bottom' },
-                datalabels: {
-                    formatter: (value, ctx) => {
-                        const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        if (total === 0) return '0%';
-                        const percentage = (value / total * 100).toFixed(1);
-                        return `${percentage}%`;
-                    },
-                    color: '#000',
-                    font: { weight: 'bold' }
-                }
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
             }
-        },
-        plugins: [ChartDataLabels]
-    });
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return 'จำนวน: ' + context.parsed.y;
+                }
+              }
+            }
+          }
+        }
+      });
     </script>
 
 </body>

@@ -1,109 +1,108 @@
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
-import json
-from markupsafe import Markup
 from datetime import datetime
 
 app = Flask(__name__)
-DB_NAME = 'customers.db'
 
-# ✅ สร้างตารางหากยังไม่มี
+# ✅ สร้างตาราง customers ถ้ายังไม่มี
 def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-
-    # ✅ สร้างตาราง customers ถ้ายังไม่มี
-    c.execute('''
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS customers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
             phone TEXT,
             location TEXT,
-            note TEXT,
-            details TEXT,
-            price TEXT,
-            status TEXT,
-            follow_up_date TEXT
+            price REAL,
+            decision_status TEXT,
+            follow_up_date TEXT,
+            note TEXT
         )
     ''')
-
-    # ✅ ตรวจสอบว่าคอลัมน์ details มีหรือยัง
-    c.execute("PRAGMA table_info(customers)")
-    columns = [row[1] for row in c.fetchall()]
-
-    if 'details' not in columns:
-        try:
-            c.execute("ALTER TABLE customers ADD COLUMN details TEXT")
-        except sqlite3.OperationalError:
-            pass
-
     conn.commit()
     conn.close()
 
-
-init_db()
-
-
-# ✅ หน้าแรก + ค้นหา + ส่งข้อมูลแบบ JSON
+# ✅ หน้าแรก: แสดงทั้งหมด + แจ้งเตือน + จำนวนลูกค้าตามสถานะ
 @app.route('/')
 def index():
-    search = request.args.get('search', '')
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    if search:
-        c.execute("SELECT * FROM customers WHERE name LIKE ?", ('%' + search + '%',))
-    else:
-        c.execute("SELECT * FROM customers")
-    customers = c.fetchall()
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+
+    # ลูกค้าทั้งหมด
+    cursor.execute("SELECT * FROM customers")
+    customers = cursor.fetchall()
+
+    # ลูกค้าที่ถึงวันติดตามวันนี้
+    today = datetime.today().strftime('%Y-%m-%d')
+    cursor.execute("SELECT * FROM customers WHERE follow_up_date = ?", (today,))
+    due_today = cursor.fetchall()
+
+    # จำนวนลูกค้าแต่ละสถานะ
+    cursor.execute("SELECT COUNT(*) FROM customers WHERE decision_status='รับงาน'")
+    ordered = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM customers WHERE decision_status='ปฏิเสธ'")
+    not_ordered = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM customers WHERE decision_status='รอดำเนินการ'")
+    pending = cursor.fetchone()[0]
+
     conn.close()
 
-    # ✅ แปลง customers เป็น JSON สำหรับ Chart.js
-    customers_json = Markup(json.dumps([dict(row) for row in customers]))
+    return render_template(
+        'index.html',
+        customers=customers,
+        due_today=due_today,
+        ordered=ordered,
+        not_ordered=not_ordered,
+        pending=pending
+    )
 
-    return render_template('index.html', customers=customers, customers_json=customers_json)
-
-# ✅ เพิ่มลูกค้า
+# ✅ เพิ่มลูกค้าใหม่
 @app.route('/add', methods=['POST'])
 def add_customer():
     name = request.form['name']
     phone = request.form['phone']
     location = request.form['location']
+    price = request.form['price']
+    status = request.form.get('status', 'รอดำเนินการ')
+    follow_up_date = request.form['follow_up_date']
     note = request.form['note']
-    details = request.form['proposal_details']
-    price = request.form['proposal_price']
-    follow_up_date = request.form.get('follow_up_date')
 
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO customers (name, phone, location, note, details, price, status, follow_up_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (name, phone, location, note, details, price or None, 'รอตัดสินใจ', follow_up_date or None))
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO customers (name, phone, location, price, decision_status, follow_up_date, note)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (name, phone, location, price, status, follow_up_date, note))
     conn.commit()
     conn.close()
+
     return redirect(url_for('index'))
 
 # ✅ ลบลูกค้า
-@app.route('/delete_customer/<int:customer_id>', methods=['POST'])
-def delete_customer(customer_id):
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute('DELETE FROM customers WHERE id = ?', (customer_id,))
+@app.route('/delete/<int:id>')
+def delete_customer(id):
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM customers WHERE id = ?", (id,))
     conn.commit()
     conn.close()
     return redirect(url_for('index'))
 
 # ✅ อัปเดตสถานะลูกค้า
-@app.route('/update_status/<int:customer_id>', methods=['POST'])
-def update_status(customer_id):
-    new_status = request.form['new_status']
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute('UPDATE customers SET status = ? WHERE id = ?', (new_status, customer_id))
+@app.route('/update_status/<int:id>', methods=['POST'])
+def update_status(id):
+    new_status = request.form['decision_status']
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("UPDATE customers SET decision_status = ? WHERE id = ?", (new_status, id))
     conn.commit()
     conn.close()
     return redirect(url_for('index'))
 
+# ✅ รันแอป
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5004)
+    init_db()
+    app.run(debug=True, port=5005)
