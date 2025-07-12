@@ -1,134 +1,106 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>ระบบติดตามลูกค้า</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-      #chart-container {
-        max-width: 30%;
-        margin: auto;
-        position: relative;
-        height: 300px;
-      }
-    </style>
-</head>
-<body class="container mt-4">
+{% extends 'layout.html' %}
+{% block title %}แดชบอร์ด{% endblock %}
+{% block content %}
 
-    <h1 class="mb-4">ระบบติดตามลูกค้า</h1>
+{% if due_today %}
+  <div class="alert alert-warning">🔔 ลูกค้าที่ต้องติดตามวันนี้:</div>
+  <ul>
+    {% for d in due_today %}
+      <li>📞 {{ d['name'] }} - {{ d['phone'] }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
 
-    {% if due_today and due_today|length > 0 %}
-        <div class="alert alert-danger">
-            📢 <strong>วันนี้เป็นวันติดตามลูกค้าจำนวน {{ due_today|length }} คน!</strong><br>
-            <span>กรุณาติดต่อ:</span>
-            <ul class="mt-2 mb-0">
-                {% for row in due_today %}
-                    <li>{{ row[1] }} - {{ row[2] }} (ติดตามวันที่ {{ row[6] }})</li>
-                {% endfor %}
-            </ul>
-        </div>
+<p>ลูกค้าที่รับงาน: {{ ordered }}</p>
+<p>ลูกค้าที่ปฏิเสธ: {{ not_ordered }}</p>
+<a href="{{ url_for('add_customer') }}" class="btn btn-primary mb-3">➕ เพิ่มลูกค้า</a>
 
-        <!-- ✅ เสียงแจ้งเตือน -->
-        <audio id="alertSound" autoplay>
-            <source src="{{ url_for('static', filename='alert.mp3') }}" type="audio/mpeg">
-            เบราว์เซอร์ไม่รองรับเสียง
-        </audio>
-        <script>
-            window.addEventListener('DOMContentLoaded', function () {
-                const sound = document.getElementById('alertSound');
-                if (sound) {
-                    sound.play().catch(function (err) {
-                        console.warn("เบราว์เซอร์บล็อกเสียงอัตโนมัติ:", err);
-                    });
-                }
-            });
-        </script>
-    {% endif %}
 
-    <div class="mb-5">
-        <h5>สรุปสถานะลูกค้า</h5>
-        <div id="chart-container">
-            <canvas id="statusChart"></canvas>
-        </div>
-    </div>
+<!-- 🔽 วางตรงนี้ -->
+<div style="max-width: 600px; margin: 30px auto;">
+  <canvas id="statusChart" height="100"></canvas>
+</div>
 
-    <form method="post" action="/add" class="row g-2 mb-4">
-        <div class="col-md-2"><input type="text" name="name" placeholder="ชื่อลูกค้า" class="form-control" required></div>
-        <div class="col-md-2"><input type="tel" name="phone" placeholder="เบอร์โทร" pattern="[0-9]{9,10}" class="form-control" required></div>
-        <div class="col-md-2"><input type="text" name="location" placeholder="สถานที่" class="form-control"></div>
-        <div class="col-md-1"><input type="number" name="price" placeholder="ราคา" class="form-control" min="0"></div>
-        <div class="col-md-2">
-            <select name="status" class="form-select">
-                <option value="รอดำเนินการ">รอดำเนินการ</option>
-                <option value="รับงาน">รับงาน</option>
-                <option value="ปฏิเสธ">ปฏิเสธ</option>
-            </select>
-        </div>
-        <div class="col-md-2"><input type="date" name="follow_up_date" class="form-control" required></div>
-        <div class="col-md-3 mt-2"><input type="text" name="note" placeholder="หมายเหตุ" class="form-control"></div>
-        <div class="col-md-2 mt-2"><button type="submit" class="btn btn-primary w-100">เพิ่มลูกค้า</button></div>
-    </form>
+<!-- กราฟสถานะลูกค้า (เวอร์ชันขนาดเล็กลงอีก 20%) -->
+<!-- กราฟสถานะลูกค้า (เวอร์ชันขนาดเล็กลงอีก 20%) -->
+<div style="max-width: 600px; margin: auto;">
+  <canvas id="statusChart" height="180"></canvas>
+</div>
 
-    <table class="table table-bordered table-striped align-middle">
-        <thead>
-            <tr>
-                <th>ชื่อ</th><th>เบอร์</th><th>สถานที่</th><th>ราคา</th><th>สถานะ</th><th>ติดตาม</th><th>หมายเหตุ</th><th>อัปเดตสถานะ</th><th>ลบ</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in customers %}
-            <tr>
-                <td>{{ row[1] }}</td><td>{{ row[2] }}</td><td>{{ row[3] }}</td><td>{{ row[4] }}</td><td>{{ row[5] }}</td><td>{{ row[6] }}</td><td>{{ row[7] }}</td>
-                <td>
-                    <form action="/update_status/{{ row[0] }}" method="post" class="d-flex">
-                        <select name="decision_status" class="form-select me-2">
-                            <option value="รอดำเนินการ" {% if row[5] == 'รอดำเนินการ' %}selected{% endif %}>รอดำเนินการ</option>
-                            <option value="รับงาน" {% if row[5] == 'รับงาน' %}selected{% endif %}>รับงาน</option>
-                            <option value="ปฏิเสธ" {% if row[5] == 'ปฏิเสธ' %}selected{% endif %}>ปฏิเสธ</option>
-                        </select>
-                        <button type="submit" class="btn btn-sm btn-success">อัปเดต</button>
-                    </form>
-                </td>
-                <td><a href="/delete/{{ row[0] }}" class="btn btn-sm btn-danger" onclick="return confirm('ลบลูกค้าคนนี้?')">ลบ</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('statusChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    ...
+  });
+</script>
 
-    <script>
-      const ctx = document.getElementById('statusChart').getContext('2d');
-      const statusChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['รับงาน', 'ปฏิเสธ', 'รอดำเนินการ'],
-          datasets: [{
+
+
+
+
+
+
+<div class="table-responsive mt-4">
+  <table class="table table-bordered table-sm text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>ชื่อ</th>
+        <th>เบอร์</th>
+        <th>สถานที่</th>
+        <th>ราคา</th>
+        <th>ประเภท</th>
+        <th>วันติดตาม</th>
+        <th>สถานะ</th>
+        <th>หมายเหตุ</th>
+        <th>การจัดการ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in customers %}
+        <tr>
+          <td>{{ c['name'] }}</td>
+          <td>{{ c['phone'] }}</td>
+          <td>{{ c['location'] }}</td>
+          <td>{{ c['price'] }}</td>
+          <td>{{ c['product_type'] }}</td>
+          <td>{{ c['follow_up_date'] }}</td>
+          <td>{{ c['decision_status'] }}</td>
+          <td>{{ c['note'] }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('delete_customer', customer_id=c['id']) }}" style="display:inline;">
+              <button type="submit" class="btn btn-danger btn-sm">ลบ</button>
+            </form>
+            <a href="{{ url_for('edit_status', customer_id=c['id']) }}" class="btn btn-warning btn-sm">แก้ไข</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('statusChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['รับงาน', 'ปฏิเสธ', 'ยังไม่ตัดสินใจ'],
+        datasets: [{
             label: 'จำนวนลูกค้า',
-            data: [{{ ordered }}, {{ not_ordered }}, {{ pending }}],
-            backgroundColor: ['#800000', '#808080', '#FFD700'],
-            borderColor: ['#5a0000', '#666666', '#b8860b'],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: { beginAtZero: true, ticks: { stepSize: 1 } }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return 'จำนวน: ' + context.parsed.y;
-                }
-              }
-            }
-          }
+            data: [{{ ordered }}, {{ not_ordered }}, {{ undecided_count }}],
+            backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
+            borderRadius: 5
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+            legend: { display: false }
         }
-      });
-    </script>
-
-</body>
-</html>
+    }
+});
+</script>
+{% endblock %}

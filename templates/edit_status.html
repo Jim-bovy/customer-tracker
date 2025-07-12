@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+{% block title %}แก้ไขสถานะลูกค้า{% endblock %}
+{% block content %}
+<h2>🔧 แก้ไขสถานะของ {{ customer['name'] }}</h2>
+<form method="POST">
+  <select name="decision_status" class="form-control mb-3">
+    <option {% if customer['decision_status'] == 'ยังไม่ตัดสินใจ' %}selected{% endif %}>ยังไม่ตัดสินใจ</option>
+    <option {% if customer['decision_status'] == 'รับงาน' %}selected{% endif %}>รับงาน</option>
+    <option {% if customer['decision_status'] == 'ปฏิเสธ' %}selected{% endif %}>ปฏิเสธ</option>
+  </select>
+  <button type="submit" class="btn btn-primary">อัปเดต</button>
+</form>
+{% endblock %}
