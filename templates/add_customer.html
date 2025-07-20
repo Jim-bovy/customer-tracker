@@ -1,67 +1,92 @@
 {% extends 'layout.html' %}
-{% block title %}เพิ่มลูกค้าใหม่{% endblock %}
-
+{% block title %}เพิ่มลูกค้า{% endblock %}
 {% block content %}
-<h2 class="mb-4">➕ เพิ่มลูกค้าใหม่</h2>
-
-<form method="POST" class="row g-3">
-  <div class="col-md-6">
-    <label class="form-label">ชื่อลูกค้า</label>
-    <input type="text" name="name" class="form-control" required>
+<div class="container mt-4">
+  <h3 class="mb-4">➕ เพิ่มลูกค้าใหม่</h3>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label>👤 ชื่อลูกค้า:</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label>📞 เบอร์โทร:</label>
+        <input type="text" name="phone" class="form-control">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label>👨‍💼 Sale รับงาน:</label>
+        <input type="text" name="sale_name" class="form-control">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label>📅 วันที่ติดต่อ:</label>
+        <input type="date" name="contact_date" class="form-control">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label>📆 วันที่ติดตาม:</label>
+        <input type="date" name="follow_up_date" class="form-control">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label>🏢 หน่วยงาน:</label>
+        <select name="agency_type" class="form-select">
+          <option value="ภาครัฐ">ภาครัฐ</option>
+          <option value="เอกชน">เอกชน</option>
+          <option value="อื่น ๆ">อื่น ๆ</option>
+        </select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label>📍 สถานที่:</label>
+        <input type="text" name="location" class="form-control">
+      </div>
+      <div class="col-md-6 mb-3">
+  <label>🛠️ ลักษณะงาน:</label>
+  <select name="work_type" class="form-select" required>
+    <option value="">-- เลือก --</option>
+    <option value="อาคารสูง">อาคารสูง</option>
+    <option value="คอนโด">คอนโด</option>
+    <option value="อพาร์ตเมนต์">อพาร์ตเมนต์</option>
+    <option value="บ้านเดี่ยว">บ้านเดี่ยว</option>
+    <option value="โรงงาน">โรงงาน</option>
+    <option value="อื่น ๆ">อื่น ๆ</option>
+  </select>
+</div>
+      <div class="mb-3">
+        <label>📦 สินค้าที่สนใจ (เลือกหลายได้):</label><br>
+        {% set products = [
+  'โครงสร้างสำเร็จรูป',
+  'ผนังรับแรง Precast',
+  'ผนัง Precast อาคาร',
+  'GRC ตกแต่ง',
+  'แผ่นกันเสียง',
+  'แผ่นพื้นสามขา',
+  'แผ่นพื้นท้องเรียบ',
+  'รั้ว',
+  'ผนังกันดิน',
+  'แบริเออร์',
+  'อื่นๆ'
+] %}
+{% set selected_products = customer['product_type'].split(', ') if customer and customer['product_type'] else [] %}
+<label class="form-label">📦 สินค้าที่สนใจ:</label><br>
+{% for p in products %}
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="checkbox" name="product_type[]" value="{{ p }}" id="product{{ loop.index }}" {% if p in selected_products %}checked{% endif %}>
+    <label class="form-check-label" for="product{{ loop.index }}">{{ p }}</label>
   </div>
-
-  <div class="col-md-6">
-    <label class="form-label">เบอร์โทรศัพท์</label>
-    <input type="text" name="phone" class="form-control">
-  </div>
-
-  <div class="col-md-6">
-    <label class="form-label">สถานที่</label>
-    <input type="text" name="location" class="form-control">
-  </div>
-
-  <div class="col-md-6">
-    <label class="form-label">ราคา</label>
-    <input type="number" step="0.01" name="price" class="form-control">
-  </div>
-
-  <div class="col-md-6">
-    <label class="form-label">ประเภทสินค้า</label>
-    <select name="product_type" class="form-select" required>
-      <option value="">-- กรุณาเลือกประเภทสินค้า --</option>
-      <option>แผ่นพื้นสามขา</option>
-      <option>คอนกรีตเสริมใยแก้ว</option>
-      <option>แผ่นพื้นท้องเรียบ</option>
-      <option>ผนังกันเสียง</option>
-      <option>ผนังคอนกรีตสำเร็จรูป</option>
-      <option>เสา</option>
-      <option>คานสำเร็จรูป</option>
-      <option>อื่นๆ</option>
-    </select>
-  </div>
-
-  <div class="col-md-6">
-    <label class="form-label">วันที่ติดตาม</label>
-    <input type="date" name="follow_up_date" class="form-control">
-  </div>
-
-  <div class="col-md-6">
-    <label class="form-label">สถานะการตัดสินใจ</label>
-    <select name="decision_status" class="form-select">
-      <option>ยังไม่ตัดสินใจ</option>
-      <option>รับงาน</option>
-      <option>ปฏิเสธ</option>
-    </select>
-  </div>
-
-  <div class="col-12">
-    <label class="form-label">หมายเหตุเพิ่มเติม</label>
-    <textarea name="note" class="form-control" rows="3" placeholder="ข้อมูลเพิ่มเติมอื่น ๆ..."></textarea>
-  </div>
-
-  <div class="col-12 text-end">
-    <button type="submit" class="btn btn-success">💾 บันทึก</button>
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">ย้อนกลับ</a>
-  </div>
-</form>
+{% endfor %}
+      </div>
+      <div class="mb-3">
+        <label>📎 แนบเอกสาร (PDF, รูป):</label>
+        <input type="file" name="attachment" class="form-control" accept=".pdf,.jpg,.png,.jpeg">
+      </div>
+      <div class="mb-3">
+        <label>📝 บันทึกเพิ่มเติม:</label>
+        <textarea name="note" class="form-control" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="text-center">
+      <button type="submit" class="btn btn-success">💾 บันทึก</button>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">ย้อนกลับ</a>
+      <button type="reset" class="btn btn-warning">🧹 เคลียร์</button>
+    </div>
+  </form>
+</div>
 {% endblock %}

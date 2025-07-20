@@ -1,23 +1,30 @@
-# update_db.py
 import sqlite3
 
-def add_product_type_column():
-    conn = sqlite3.connect('database.db')
-    c = conn.cursor()
+conn = sqlite3.connect('database.db')
+c = conn.cursor()
 
-    try:
-        # พยายามเพิ่มคอลัมน์ใหม่
-        c.execute("ALTER TABLE customers ADD COLUMN product_type TEXT")
-        conn.commit()
-        print("✅ เพิ่มคอลัมน์ product_type สำเร็จแล้ว")
-    except sqlite3.OperationalError as e:
-        # ถ้ามี error ว่าคอลัมน์มีอยู่แล้ว
-        if "duplicate column name" in str(e).lower():
-            print("⚠️ คอลัมน์ 'product_type' มีอยู่แล้วในตาราง customers")
-        else:
-            print("❌ เกิดข้อผิดพลาด:", e)
-    finally:
-        conn.close()
+# ตรวจสอบคอลัมน์ในตาราง customers
+c.execute("PRAGMA table_info(customers)")
+columns = [col[1] for col in c.fetchall()]
 
-if __name__ == "__main__":
-    add_product_type_column()
+def add_column_if_missing(column_name, column_type):
+    if column_name not in columns:
+        try:
+            c.execute(f"ALTER TABLE customers ADD COLUMN {column_name} {column_type}")
+            print(f"✅ เพิ่มคอลัมน์ {column_name} เรียบร้อยแล้ว")
+        except sqlite3.OperationalError as e:
+            print(f"⚠️ เพิ่มไม่ได้: {column_name} ->", e)
+    else:
+        print(f"ℹ️ คอลัมน์ {column_name} มีอยู่แล้ว")
+
+# รายการคอลัมน์ที่ต้องเช็กและเพิ่ม
+add_column_if_missing('sale_name', 'TEXT')
+add_column_if_missing('contact_date', 'TEXT')
+add_column_if_missing('agency_type', 'TEXT')
+add_column_if_missing('location', 'TEXT')
+add_column_if_missing('work_type', 'TEXT')
+add_column_if_missing('note', 'TEXT')
+add_column_if_missing('product_type', 'TEXT')
+
+conn.commit()
+conn.close()

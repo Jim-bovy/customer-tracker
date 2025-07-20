@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @font-face {
+            font-family: 'THSarabun';
+            src: url("../static/fonts/THSarabunNew.ttf") format("truetype");
+        }
+
+        body {
+            font-family: 'THSarabun', sans-serif;
+            font-size: 16pt;
+            line-height: 1.5;
+            background: #fff;
+            padding: 40px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24pt;
+            margin-bottom: 40px;
+            color: #004080;
+        }
+
+        h2 {
+            font-size: 18pt;
+            color: #006699;
+            border-left: 6px solid #006699;
+            padding-left: 10px;
+            margin-bottom: 10px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+        }
+
+        p {
+            margin: 4px 0;
+        }
+
+        strong {
+            color: #222;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background-color: #fff;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        th {
+            background-color: #006699;
+            color: white;
+            font-weight: normal;
+        }
+
+        td {
+            background-color: #fefefe;
+        }
+
+        .money {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<h1>📄 รายละเอียดลูกค้า</h1>
+
+{% if customer %}
+<div class="section">
+    <h2>👤 ข้อมูลลูกค้า</h2>
+    <p><strong>ชื่อลูกค้า:</strong> {{ customer.name }}</p>
+    <p><strong>เบอร์โทร:</strong> {{ customer.phone }}</p>
+    <p><strong>หน่วยงาน:</strong> {{ customer.location }}</p>
+    <p><strong>ประเภทสินค้า:</strong> {{ customer.product_type }}</p>
+    <p><strong>ลักษณะงาน:</strong> {{ customer.work_type }}</p>
+    <p><strong>วันที่ติดต่อ:</strong> {{ customer.contact_date }}</p>
+    <p><strong>ผู้ติดต่อ:</strong> {{ customer.sale_name }}</p>
+    <p><strong>วันติดตามครั้งที่ 1:</strong> {{ customer.follow_up_date }}</p>
+    <p><strong>หมายเหตุ:</strong> {{ customer.note }}</p>
+</div>
+{% endif %}
+
+{% if proposal %}
+<div class="section">
+    <h2>📌 ข้อมูลการเสนอราคา</h2>
+    <p><strong>วันที่เสนอราคา:</strong> {{ proposal.proposal_date }}</p>
+    <p><strong>มูลค่างาน:</strong>
+      {{ '{:,.2f}'.format(proposal.job_value|float) if proposal and proposal.job_value else '-' }}
+    </p>
+    <p><strong>สถานะ:</strong> {{ proposal.decision_status }}</p>
+    <p><strong>เหตุผล:</strong> {{ proposal.reason }}</p>
+    <p><strong>บันทึก:</strong> {{ proposal.note }}</p>
+    <p><strong>วันติดตามครั้งที่ 2:</strong> {{ proposal.follow_up_date }}</p>
+</div>
+{% endif %}
+
+{% if contract %}
+<div class="section">
+    <h2>📄 ข้อมูลการทำสัญญา</h2>
+    <p><strong>ได้งาน:</strong> {{ 'ใช่' if contract.got_job else 'ไม่ใช่' }}</p>
+    <p><strong>วันที่ทำสัญญา:</strong> {{ contract.contract_date }}</p>
+    <p><strong>งวดการชำระ:</strong> {{ contract.payment_schedule }}</p>
+    <p><strong>เริ่มงาน:</strong> {{ contract.work_start }}</p>
+    <p><strong>สิ้นสุดงาน:</strong> {{ contract.work_end }}</p>
+    <p><strong>วันติดตามครั้งที่ 3:</strong> {{ customer.follow_up_date_3 if customer.follow_up_date_3 else '-' }}</p>
+    <p><strong>หมายเหตุ:</strong> {{ contract.note }}</p>
+</div>
+{% endif %}
+
+{% if payments %}
+<div class="section">
+    <h2>💰 ประวัติการรับชำระเงิน</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>วันที่รับเงิน</th>
+                <th>งวดที่</th>
+                <th class="money">จำนวนเงิน (บาท)</th>
+                <th>หมายเหตุ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pay in payments %}
+            <tr>
+                <td>{{ pay.payment_date }}</td>
+                <td>{{ pay.payment_phase }}</td>
+                <td class="money">{{ '{:,.2f}'.format(pay.amount|float) if pay.amount else '-' }}</td>
+                <td>{{ pay.note }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+</body>
+</html>

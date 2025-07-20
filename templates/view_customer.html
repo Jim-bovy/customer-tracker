@@ -1,0 +1,92 @@
+{% extends 'layout.html' %}
+{% block title %}รายละเอียดลูกค้า{% endblock %}
+{% block content %}
+
+<div class="container mt-4">
+  <h2 class="mb-3">📋 รายละเอียดลูกค้า: {{ customer['name'] }}</h2>
+
+  <div class="card p-3 shadow-sm mb-4">
+    <p><strong>📞 เบอร์โทร:</strong> {{ customer['phone'] }}</p>
+    <p><strong>🧑‍💼 เซลล์ผู้ดูแล:</strong> {{ customer['sale_name'] }}</p>
+    <p><strong>📅 วันที่ติดต่อ:</strong> {{ customer['contact_date'] }}</p>
+    <p><strong>🔁 วันติดตาม:</strong> {{ customer['follow_up_date'] }}</p>
+    <p><strong>🏢 หน่วยงาน:</strong> {{ customer['agency_type'] }}</p>
+    <p><strong>📍 สถานที่:</strong> {{ customer['location'] }}</p>
+    <p><strong>🛠️ ลักษณะงาน:</strong> {{ customer['work_type'] }}</p>
+    <p><strong>📦 ประเภทสินค้า:</strong> {{ customer['product_type'] }}</p>
+    <p><strong>💰 มูลค่างาน:</strong> {{ customer['price'] or 'ยังไม่ระบุ' }}</p>
+    <p><strong>📎 เอกสารแนบ:</strong>
+      {% if customer['attachment'] %}
+        <a href="{{ url_for('static', filename='uploads/' + customer['attachment']) }}" target="_blank">ดูไฟล์แนบ</a>
+      {% else %}
+        ไม่มีไฟล์แนบ
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="mb-4">
+    <h4>📝 หมายเหตุจากการเพิ่มลูกค้า</h4>
+    <p>{{ customer['note'] if customer['note'] else 'ไม่มีบันทึกข้อความ' }}</p>
+  </div>
+
+  <hr>
+  <h4>📑 ครั้งที่ 2: การเสนอราคา</h4>
+  {% if proposal %}
+  <ul>
+    <li>📅 วันที่เสนอราคา: {{ proposal['proposal_date'] }}</li>
+    <li>💰 มูลค่างาน: {{ proposal['job_value'] }}</li>
+    <li>📌 สถานะ: {{ proposal['decision_status'] }}</li>
+    <li>🗣️ เหตุผล: {{ proposal['reason'] }}</li>
+    <li>🔁 นัดติดตาม: {{ proposal['follow_up_date'] }}</li>
+    <li>📝 หมายเหตุ: {{ proposal['note'] }}</li>
+  </ul>
+  {% else %}
+  <p class="text-muted">ยังไม่มีข้อมูล</p>
+  {% endif %}
+
+  <hr>
+  <h4>📄 ครั้งที่ 3: ทำสัญญา</h4>
+  {% if contract %}
+  <ul>
+    <li>📌 ได้รับงาน: {{ '✅ ใช่' if contract['got_job'] else '❌ ไม่ใช่' }}</li>
+    <li>📅 วันที่ทำสัญญา: {{ contract['contract_date'] }}</li>
+    <li>📆 งวดงาน: {{ contract['payment_schedule'] }}</li>
+    <li>📅 เริ่มงาน: {{ contract['work_start'] }} ถึง {{ contract['work_end'] }}</li>
+    <li>📝 หมายเหตุ: {{ contract['note'] }}</li>
+  </ul>
+  {% else %}
+  <p class="text-muted">ยังไม่มีข้อมูล</p>
+  {% endif %}
+
+  <hr class="my-4">
+  <h4 class="mb-3">💳 ประวัติการรับเงิน</h4>
+  {% if payments %}
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>วันที่รับเงิน</th>
+        <th>งวดที่</th>
+        <th>จำนวนเงิน (บาท)</th>
+        <th>หมายเหตุ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in payments %}
+      <tr>
+        <td>{{ p['payment_date'] }}</td>
+        <td>{{ p['payment_phase'] }}</td>
+        <td>{{ '{:,.2f}'.format(p['amount']) }}</td>
+        <td>{{ p['note'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">ยังไม่มีข้อมูลการรับเงิน</p>
+  {% endif %}
+
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">⬅️ กลับ</a>
+  <a href="{{ url_for('export_customer', customer_id=customer['id']) }}" class="btn btn-outline-primary mt-3">⬇️ ส่งออก PDF</a>
+</div>
+
+{% endblock %}

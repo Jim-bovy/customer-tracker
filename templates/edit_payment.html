@@ -1,0 +1,28 @@
+<{% extends 'layout.html' %}
+{% block title %}แก้ไขข้อมูลการรับเงิน{% endblock %}
+{% block content %}
+
+<h2>✏️ แก้ไขข้อมูลการรับเงิน</h2>
+
+<form method="POST">
+  <div class="mb-3">
+    <label class="form-label">วันที่รับเงิน</label>
+    <input type="date" name="payment_date" class="form-control" value="{{ payment['payment_date'] }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">งวดที่</label>
+    <input type="text" name="payment_phase" class="form-control" value="{{ payment['payment_phase'] }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">จำนวนเงิน</label>
+    <input type="number" name="amount" step="0.01" class="form-control" value="{{ payment['amount'] }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">หมายเหตุ</label>
+    <textarea name="note" class="form-control">{{ payment['note'] }}</textarea>
+  </div>
+  <button type="submit" class="btn btn-primary">💾 บันทึกการแก้ไข</button>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">⬅️ กลับ</a>
+</form>
+
+{% endblock %}

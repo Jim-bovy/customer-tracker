@@ -1,0 +1,63 @@
+{% extends 'layout.html' %}
+{% block title %}PCM-CRM{% endblock %}
+{% block content %}
+
+<h1 class="mb-4">PCM-CRM</h1>
+
+{% if due_today %}
+  <div class="alert alert-warning">🔔 ลูกค้าที่ต้องติดตามวันนี้:</div>
+  <ul>
+    {% for d in due_today %}
+      <li>📞 {{ d['name'] }} - {{ d['phone'] }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<p>ลูกค้าที่รับงาน: {{ ordered }}</p>
+<p>ลูกค้าที่ปฏิเสธ: {{ not_ordered }}</p>
+
+<!-- 🔁 ปุ่มรวมสรุปลูกค้า -->
+<div class="mb-3">
+  <a href="{{ url_for('add_customer') }}" class="btn btn-primary">➕ เพิ่มลูกค้า</a>
+  <a href="{{ url_for('accepted_customers') }}" class="btn btn-outline-success">✅ ลูกค้าที่รับงาน</a>
+  <a href="{{ url_for('rejected_customers') }}" class="btn btn-outline-danger">❌ ลูกค้าที่ปฏิเสธ</a>
+</div>
+
+<!-- 📋 ตารางข้อมูลลูกค้า -->
+<div class="table-responsive">
+  <table class="table table-bordered table-striped">
+    <thead class="table-light">
+      <tr>
+        <th>ชื่อลูกค้า</th>
+        <th>เบอร์โทร</th>
+        <th>ลักษณะงาน</th>
+        <th>ประเภทสินค้า</th>
+        <th>วันที่ติดตาม</th>
+        <th>สถานะ</th>
+        <th>จัดการ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in customers %}
+      <tr>
+        <td>{{ c['name'] }}</td>
+        <td>{{ c['phone'] }}</td>
+        <td>{{ c['work_type'] }}</td>
+        <td>{{ c['product_type'] }}</td>
+        <td>{{ c['follow_up_date'] }}</td>
+        <td>{{ c['decision_status'] }}</td>
+        <td>
+          <a href="{{ url_for('visit2', customer_id=c['id']) }}" class="btn btn-sm btn-warning mb-1">✅ เสนอราคา</a>
+          <a href="{{ url_for('visit3', customer_id=c['id']) }}" class="btn btn-sm btn-success mb-1">✅ ตกลง</a>
+          <a href="{{ url_for('view_customer', customer_id=c['id']) }}" class="btn btn-sm btn-info mb-1">📄 รายละเอียด</a>
+          <a href="{{ url_for('delete_customer', customer_id=c['id']) }}" class="btn btn-sm btn-danger mb-1"
+             onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบลูกค้ารายนี้?')">🗑️ ลบ</a>
+          <a href="{{ url_for('export_customer', customer_id=c['id']) }}" class="btn btn-sm btn-secondary mb-1">📄 PDF</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
